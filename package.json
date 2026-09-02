@@ -12,25 +12,27 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@neon/config": "^1.2.0",
+    "@neon/env": "^1.2.0",
     "@prisma/client": "^5.20.0",
+    "bad-words": "^3.0.4",
+    "jose": "^5.9.3",
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "stripe": "^16.12.0",
-    "zod": "^3.23.8",
-    "bad-words": "^3.0.4",
-    "jose": "^5.9.3"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "prisma": "^5.20.0",
-    "typescript": "^5.6.2",
-    "ts-node": "^10.9.2",
     "@types/node": "^22.7.4",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
-    "tailwindcss": "^3.4.13",
+    "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
-    "autoprefixer": "^10.4.20"
+    "prisma": "^5.20.0",
+    "tailwindcss": "^3.4.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
