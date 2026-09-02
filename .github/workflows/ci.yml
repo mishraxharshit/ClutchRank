@@ -1,0 +1,45 @@
+name: CI
+
+# Runs on every pull request and every push to main. This is the safety net
+# that catches broken code before it reaches production - once you require
+# this check in branch protection, nobody (including future-you) can merge
+# a PR that fails to typecheck.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # --ignore-scripts skips `prisma generate` here on purpose: it needs
+      # DATABASE_URL to fully validate the schema, which we don't want to
+      # hand to CI as a secret just to run a typecheck. We generate the
+      # client types without a live DB connection instead (see below).
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client (types only, no DB needed)
+        run: npx prisma generate
+        env:
+          # prisma generate never connects to this - it just validates that
+          # the env var referenced in schema.prisma exists. A real DB is
+          # never touched during typecheck.
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/placeholder"
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx next lint || true
+        # `|| true` for now since no lint config is set up yet - remove this
+        # once you add one, so lint failures start blocking merges too.

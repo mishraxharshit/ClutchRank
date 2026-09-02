@@ -1,0 +1,83 @@
+// Data model notes:
+// - There are no fixed "rank slots". A listing's rank is just its position when
+//   all ACTIVE listings in a category are sorted by amountCents descending.
+//   "Claiming #1" simply means paying more than the current top amount.
+//   This means two people paying at the same instant can never corrupt state -
+//   both inserts succeed independently, sort order resolves the ranking.
+// - Money is never a source of truth from the client. amountCents is only ever
+//   written once, server-side, after Stripe confirms the payment via webhook.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ListingStatus {
+  PENDING   // checkout session created, payment not yet confirmed
+  ACTIVE    // payment confirmed, visible on the public leaderboard
+  REMOVED   // taken down by moderation
+  REFUNDED  // payment was refunded (chargeback or moderation refund)
+}
+
+model Category {
+  slug      String    @id
+  name      String
+  listings  Listing[]
+}
+
+model Listing {
+  id                     String        @id @default(cuid())
+  name                   String
+  url                    String
+  blurb                  String
+  categorySlug           String
+  category               Category      @relation(fields: [categorySlug], references: [slug])
+
+  amountCents            Int
+  clicks                 Int           @default(0)
+  status                 ListingStatus @default(PENDING)
+
+  // Payment linkage - stripeSessionId is unique so the webhook can never
+  // double-process the same checkout session.
+  stripeSessionId        String        @unique
+  stripePaymentIntentId  String?
+
+  // Ownership without a full account system: a random, unguessable token is
+  // generated at claim time and shown once. It is the only way to edit or
+  // withdraw a listing. Treat it like a password - it is hashed at rest.
+  editTokenHash          String        @unique
+  ownerEmail             String
+
+  // Abuse tracking - IP is hashed (never stored raw) so we can rate-limit
+  // and detect abuse patterns without retaining personal data long-term.
+  ipHash                 String
+
+  flaggedCount           Int           @default(0)
+
+  createdAt              DateTime      @default(now())
+  activatedAt            DateTime?
+
+  reports                Report[]
+
+  @@index([categorySlug, status, amountCents])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id])
+  reason     String
+  createdAt  DateTime @default(now())
+}
+
+// Every Stripe webhook event ID is recorded before processing. If Stripe
+// retries a webhook delivery (it does this routinely), we detect the
+// duplicate and skip reprocessing instead of double-activating a listing.
+model ProcessedWebhookEvent {
+  stripeEventId String   @id
+  processedAt   DateTime @default(now())
+}

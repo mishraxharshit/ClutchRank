@@ -1,0 +1,7 @@
+# Every file defaults to requiring review from whoever is listed here.
+# When teammates join, add them under the folders they own, e.g.:
+#   app/admin/  @teammate-github-username
+#   lib/        @teammate-github-username
+# More specific rules further down this file override the ones above them.
+
+* @your-github-username
