@@ -119,3 +119,5 @@ prisma/
   schema.prisma    Data model
   seed.ts          Seeds categories
 ```
+
+<!-- testing branch protection -->
